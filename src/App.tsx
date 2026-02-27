@@ -21,7 +21,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { PROJECTS, EXPERTISE } from './constants';
-import { Project } from './types';
+import { Project, Expertise } from './types';
 
 // --- Components ---
 
@@ -32,10 +32,20 @@ const Navbar = () => {
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
 
-  const navItems = ['Projects', 'About', 'Expertise', 'Contact'];
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMobileMenuOpen]);
+
+  const navItems = ['Projects', 'About', 'Experience', 'Expertise', 'Contact'];
 
   return (
     <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${isScrolled || isMobileMenuOpen ? 'py-4 bg-luxury-bg/90 backdrop-blur-lg border-b border-white/5' : 'py-8 bg-transparent'}`}>
@@ -72,10 +82,23 @@ const Navbar = () => {
 
           {/* Mobile Menu Toggle */}
           <button 
-            className="lg:hidden text-white z-50 p-2"
+            className="lg:hidden text-white z-50 p-2 relative w-10 h-10 flex items-center justify-center"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
-            {isMobileMenuOpen ? <X size={24} /> : <div className="space-y-1.5"><div className="w-6 h-px bg-white"></div><div className="w-4 h-px bg-white ml-auto"></div></div>}
+            <div className="flex flex-col gap-1.5 items-end">
+              <motion.div 
+                animate={isMobileMenuOpen ? { rotate: 45, y: 7, width: 24 } : { rotate: 0, y: 0, width: 24 }}
+                className="h-px bg-white origin-center"
+              />
+              <motion.div 
+                animate={isMobileMenuOpen ? { opacity: 0, x: 10 } : { opacity: 1, x: 0 }}
+                className="h-px bg-white w-4"
+              />
+              <motion.div 
+                animate={isMobileMenuOpen ? { rotate: -45, y: -7, width: 24 } : { rotate: 0, y: 0, width: 16 }}
+                className="h-px bg-white origin-center"
+              />
+            </div>
           </button>
         </div>
       </div>
@@ -84,24 +107,60 @@ const Navbar = () => {
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="fixed inset-0 bg-luxury-bg z-40 flex flex-col items-center justify-center gap-8 lg:hidden"
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="fixed inset-0 bg-luxury-bg z-40 lg:hidden flex flex-col"
           >
-            {navItems.map((item) => (
-              <a 
-                key={item} 
-                href={`#${item.toLowerCase()}`} 
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="text-3xl font-serif text-white hover:text-luxury-accent transition-colors"
+            <div className="flex-1 flex flex-col justify-center px-12 pt-20">
+              <div className="space-y-8">
+                {navItems.map((item, i) => (
+                  <motion.div
+                    key={item}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.1 + i * 0.1 }}
+                  >
+                    <a 
+                      href={`#${item.toLowerCase()}`} 
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="group flex items-center gap-6"
+                    >
+                      <span className="text-[10px] font-mono text-luxury-accent opacity-50">0{i + 1}</span>
+                      <span className="text-4xl md:text-5xl font-serif text-white group-hover:text-luxury-accent transition-colors">
+                        {item}
+                      </span>
+                    </a>
+                  </motion.div>
+                ))}
+              </div>
+
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+                className="mt-16 pt-12 border-t border-white/5"
               >
-                {item}
-              </a>
-            ))}
-            <button className="mt-8 px-12 py-4 border border-luxury-accent/30 rounded-full text-xs uppercase tracking-widest text-luxury-accent">
-              Inquiry
-            </button>
+                <p className="text-[10px] uppercase tracking-[0.3em] text-white/30 mb-8">Connect</p>
+                <div className="flex gap-8">
+                  <a href="#" className="text-white/60 hover:text-luxury-accent transition-colors"><Instagram size={20} /></a>
+                  <a href="#" className="text-white/60 hover:text-luxury-accent transition-colors"><Linkedin size={20} /></a>
+                  <a href="mailto:hello@vaishnavi.design" className="text-white/60 hover:text-luxury-accent transition-colors"><Mail size={20} /></a>
+                </div>
+              </motion.div>
+            </div>
+
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.8 }}
+              className="p-12 bg-neutral-900/50"
+            >
+              <button className="w-full py-4 border border-luxury-accent/30 rounded-full text-xs uppercase tracking-widest text-luxury-accent hover:bg-luxury-accent hover:text-luxury-bg transition-all">
+                Book a Consultation
+              </button>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -116,8 +175,17 @@ interface ProjectCardProps {
 }
 
 const ProjectCard = ({ project, onClick }: ProjectCardProps) => {
+  const ref = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "end start"]
+  });
+  const y = useTransform(scrollYProgress, [0, 1], [20, -20]);
+
   return (
     <motion.div 
+      ref={ref}
+      style={{ y }}
       layoutId={`card-${project.id}`}
       onClick={onClick}
       className="group relative aspect-[4/5] overflow-hidden cursor-pointer bg-neutral-900"
@@ -316,7 +384,7 @@ const ExpertiseModal = ({ item, onClose, Icon }: ExpertiseModalProps) => {
               "{item.expandedDescription}"
             </p>
             <p className="text-white/50 font-light leading-relaxed mb-8">
-              {item.description} Our approach to {item.title.toLowerCase()} is rooted in precision, creativity, and a deep understanding of spatial dynamics. We utilize the latest industry tools to ensure every detail is meticulously crafted.
+              {item.description} My approach to {item.title.toLowerCase()} is rooted in precision, creativity, and a deep understanding of spatial dynamics. I utilize the latest industry tools to ensure every detail is meticulously crafted.
             </p>
             <button 
               onClick={onClose}
@@ -345,6 +413,10 @@ export default function App() {
   const [selectedExpertise, setSelectedExpertise] = useState<Expertise | null>(null);
   const [hoveredExpertise, setHoveredExpertise] = useState<number | null>(null);
   const heroRef = useRef(null);
+  const aboutRef = useRef(null);
+  const projectsRef = useRef(null);
+  const experienceRef = useRef(null);
+
   const { scrollYProgress } = useScroll();
   const scaleX = useTransform(scrollYProgress, [0, 1], [0, 1]);
 
@@ -353,6 +425,40 @@ export default function App() {
     offset: ["start start", "end start"]
   });
   const yBg = useTransform(heroScroll, [0, 1], ["0%", "25%"]);
+  const yPortrait = useTransform(heroScroll, [0, 1], ["0%", "15%"]);
+  const opacityHero = useTransform(heroScroll, [0, 0.8], [1, 0]);
+
+  const { scrollYProgress: aboutScroll } = useScroll({
+    target: aboutRef,
+    offset: ["start end", "end start"]
+  });
+  const yAbout = useTransform(aboutScroll, [0, 1], ["10%", "-10%"]);
+
+  const { scrollYProgress: projectsScroll } = useScroll({
+    target: projectsRef,
+    offset: ["start end", "end start"]
+  });
+  const xProjects = useTransform(projectsScroll, [0, 1], ["-5%", "5%"]);
+
+  const { scrollYProgress: experienceScroll } = useScroll({
+    target: experienceRef,
+    offset: ["start end", "end start"]
+  });
+  const yExperience = useTransform(experienceScroll, [0, 1], ["-10%", "10%"]);
+
+  const expertiseRef = useRef(null);
+  const { scrollYProgress: expertiseScroll } = useScroll({
+    target: expertiseRef,
+    offset: ["start end", "end start"]
+  });
+  const yExpertise = useTransform(expertiseScroll, [0, 1], ["5%", "-5%"]);
+
+  const contactRef = useRef(null);
+  const { scrollYProgress: contactScroll } = useScroll({
+    target: contactRef,
+    offset: ["start end", "end start"]
+  });
+  const yContact = useTransform(contactScroll, [0, 1], ["-15%", "15%"]);
 
   const expertiseIcons: Record<string, any> = {
     Layout: Layout,
@@ -388,6 +494,7 @@ export default function App() {
 
           <div className="relative z-10 max-w-7xl mx-auto px-6 w-full flex flex-col lg:grid lg:grid-cols-2 gap-12 items-center pt-32 lg:pt-0">
             <motion.div
+              style={{ opacity: opacityHero }}
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.5 }}
@@ -399,7 +506,7 @@ export default function App() {
                 Visualizer
               </h1>
               <p className="text-base md:text-lg lg:text-xl text-white/60 max-w-md mx-auto lg:mx-0 mb-8 md:mb-12 font-light leading-relaxed">
-                Creating immersive residential and commercial spaces through spatial storytelling and high-quality visualization.
+                I create immersive residential and commercial spaces through spatial storytelling and high-quality visualization.
               </p>
               <div className="flex flex-wrap justify-center lg:justify-start gap-4 md:gap-6">
                 <a 
@@ -418,17 +525,18 @@ export default function App() {
             </motion.div>
 
             <motion.div 
+              style={{ y: yPortrait }}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 1.5, delay: 0.8 }}
               className="relative aspect-[3/4] w-full max-w-[240px] sm:max-w-[320px] lg:max-w-sm lg:ml-auto z-10"
             >
-              <div className="absolute -inset-4 border border-luxury-accent/20 translate-x-4 translate-y-4 sm:translate-x-8 sm:translate-y-8 z-0" />
-              <div className="relative z-10 w-full h-full bg-neutral-800 overflow-hidden shadow-2xl">
+              <div className="absolute -inset-4 border border-luxury-accent/20 translate-x-4 translate-y-4 sm:translate-x-8 sm:translate-y-8 z-0 rounded-t-full" />
+              <div className="relative z-10 w-full h-full bg-neutral-800 overflow-hidden rounded-t-full">
                 <img 
-                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=800" 
-                  alt="Designer Portrait" 
-                  className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-1000"
+                  src="https://lh3.googleusercontent.com/d/1LmVrFICbhS2a7kc_pQonom3ugiLTYpVE" 
+                  alt="Vaishnavi Khandelwal Portrait" 
+                  className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
                 />
               </div>
@@ -442,8 +550,14 @@ export default function App() {
         </section>
 
         {/* About Section */}
-        <section id="about" className="py-20 md:py-32 bg-luxury-bg">
-          <div className="max-w-7xl mx-auto px-6">
+        <section id="about" ref={aboutRef} className="py-20 md:py-32 bg-luxury-bg relative overflow-hidden">
+          <motion.div 
+            style={{ y: yAbout }}
+            className="absolute top-0 right-0 text-[20vw] font-serif opacity-[0.02] select-none pointer-events-none"
+          >
+            ABOUT
+          </motion.div>
+          <div className="max-w-7xl mx-auto px-6 relative z-10">
             <div className="grid md:grid-cols-12 gap-8 md:gap-12">
               <div className="md:col-span-4">
                 <h2 className="text-xs uppercase tracking-[0.5em] text-luxury-accent mb-6 md:mb-8">The Philosophy</h2>
@@ -455,7 +569,7 @@ export default function App() {
                   viewport={{ once: true }}
                   className="text-2xl sm:text-3xl md:text-5xl font-serif leading-tight mb-8 md:mb-12"
                 >
-                  I am a Senior Interior Designer & 3D Visualizer specializing in concept development, space planning, and photorealistic visualization.
+                  I am a Senior Interior Designer & 3D Visualizer with hands-on experience across residential and commercial projects.
                 </motion.p>
                 <motion.p 
                   initial={{ opacity: 0, y: 20 }}
@@ -464,7 +578,7 @@ export default function App() {
                   transition={{ delay: 0.2 }}
                   className="text-lg md:text-xl text-white/50 font-light leading-relaxed max-w-2xl mb-8 md:mb-12"
                 >
-                  With experience across residential and commercial projects — including international collaborations in Kuwait and Singapore — I transform ideas into immersive visual experiences. Design is not just my profession — it is my passion.
+                  Currently working at KJ Designs, I specialize in concept development, detailed 2D drawings, space planning, photorealistic 3D renders, walkthroughs, and VR videos. I have also collaborated on international projects in Kuwait and Singapore, delivering immersive visual experiences remotely. Design is not just my profession — it is my passion.
                 </motion.p>
                 <div className="luxury-divider" />
               </div>
@@ -472,13 +586,77 @@ export default function App() {
           </div>
         </section>
 
+        {/* Experience Section */}
+        <section id="experience" ref={experienceRef} className="py-20 md:py-32 bg-neutral-900/30 relative overflow-hidden">
+          <motion.div 
+            style={{ y: yExperience }}
+            className="absolute bottom-0 left-0 text-[18vw] font-serif opacity-[0.02] select-none pointer-events-none"
+          >
+            EXPERIENCE
+          </motion.div>
+          <div className="max-w-7xl mx-auto px-6 relative z-10">
+            <div className="grid md:grid-cols-12 gap-12">
+              <div className="md:col-span-4">
+                <h2 className="text-xs uppercase tracking-[0.5em] text-luxury-accent mb-8">Professional Journey</h2>
+              </div>
+              <div className="md:col-span-8">
+                <div className="space-y-16">
+                  <motion.div 
+                    initial={{ opacity: 0, x: 20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    className="relative pl-8 border-l border-luxury-accent/30"
+                  >
+                    <div className="absolute -left-[5px] top-0 w-2 h-2 rounded-full bg-luxury-accent" />
+                    <p className="text-[10px] uppercase tracking-widest text-luxury-accent mb-2">Current Role</p>
+                    <h3 className="text-2xl md:text-3xl font-serif mb-4">Senior Interior Designer – KJ Designs</h3>
+                    <div className="grid sm:grid-cols-2 gap-6 text-white/60 font-light">
+                      <ul className="space-y-3 list-disc list-inside marker:text-luxury-accent">
+                        <li>Concept Development</li>
+                        <li>Space Planning</li>
+                        <li>2D & 3D Documentation</li>
+                      </ul>
+                      <ul className="space-y-3 list-disc list-inside marker:text-luxury-accent">
+                        <li>Client Coordination</li>
+                        <li>Visualization & Walkthroughs</li>
+                        <li>Site Execution Supervision</li>
+                      </ul>
+                    </div>
+                  </motion.div>
+
+                  <motion.div 
+                    initial={{ opacity: 0, x: 20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.2 }}
+                    className="relative pl-8 border-l border-white/10"
+                  >
+                    <div className="absolute -left-[5px] top-0 w-2 h-2 rounded-full bg-white/20" />
+                    <p className="text-[10px] uppercase tracking-widest text-white/40 mb-2">International Collaboration</p>
+                    <h3 className="text-2xl md:text-3xl font-serif mb-4">Remote Design Consultant</h3>
+                    <p className="text-white/50 font-light leading-relaxed">
+                      Collaborated with architectural firms in Kuwait and Singapore to deliver high-end residential visualizations and space planning solutions for luxury apartments and corporate headquarters.
+                    </p>
+                  </motion.div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Portfolio Section */}
-        <section id="projects" className="py-20 md:py-32 bg-luxury-bg">
-          <div className="max-w-7xl mx-auto px-6">
+        <section id="projects" ref={projectsRef} className="py-20 md:py-32 bg-luxury-bg relative overflow-hidden">
+          <motion.div 
+            style={{ x: xProjects }}
+            className="absolute top-20 left-0 text-[15vw] font-serif opacity-[0.02] select-none pointer-events-none whitespace-nowrap"
+          >
+            PORTFOLIO PORTFOLIO
+          </motion.div>
+          <div className="max-w-7xl mx-auto px-6 relative z-10">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 md:mb-24 gap-8">
               <div>
-                <h2 className="text-xs uppercase tracking-[0.5em] text-luxury-accent mb-4 md:mb-6">Selected Works</h2>
-                <h3 className="text-4xl sm:text-5xl md:text-7xl font-serif">Portfolio</h3>
+                <h2 className="text-xs uppercase tracking-[0.5em] text-luxury-accent mb-4 md:mb-6">Featured Projects</h2>
+                <h3 className="text-4xl sm:text-5xl md:text-7xl font-serif">My Work</h3>
               </div>
               <div className="flex flex-wrap gap-4 md:gap-8 text-[10px] uppercase tracking-widest text-white/40">
                 <span className="text-white border-b border-luxury-accent pb-2">All Projects</span>
@@ -501,11 +679,20 @@ export default function App() {
         </section>
 
         {/* Expertise Section */}
-        <section id="expertise" className="py-20 md:py-32 bg-neutral-900/50">
-          <div className="max-w-7xl mx-auto px-6">
+        <section id="expertise" ref={expertiseRef} className="py-20 md:py-32 bg-neutral-900/50 relative overflow-hidden">
+          <motion.div 
+            style={{ y: yExpertise }}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[25vw] font-serif opacity-[0.01] select-none pointer-events-none whitespace-nowrap"
+          >
+            EXPERTISE EXPERTISE
+          </motion.div>
+          <div className="max-w-7xl mx-auto px-6 relative z-10">
             <div className="text-center mb-16 md:mb-24">
-              <h2 className="text-xs uppercase tracking-[0.5em] text-luxury-accent mb-4 md:mb-6">Visualization Studio</h2>
-              <h3 className="text-4xl sm:text-5xl font-serif">Areas of Expertise</h3>
+              <h2 className="text-xs uppercase tracking-[0.5em] text-luxury-accent mb-4 md:mb-6">My Expertise</h2>
+              <h3 className="text-4xl sm:text-5xl font-serif">Design Process</h3>
+              <p className="mt-6 text-white/50 font-light max-w-2xl mx-auto">
+                My design process combines spatial clarity, technical precision, and immersive visualization to communicate ideas effectively before execution.
+              </p>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 md:gap-12">
@@ -602,14 +789,20 @@ export default function App() {
                 "Design is not just what it looks like and feels like. Design is how it works and how it tells a story."
               </p>
               <div className="w-16 md:w-24 h-px bg-luxury-accent mx-auto mb-6 md:mb-8" />
-              <p className="text-[10px] uppercase tracking-[0.5em] text-luxury-accent">The Studio Philosophy</p>
+              <p className="text-[10px] uppercase tracking-[0.5em] text-luxury-accent">My Design Philosophy</p>
             </motion.div>
           </div>
         </section>
 
         {/* Contact Section */}
-        <section id="contact" className="py-20 md:py-32 bg-neutral-900">
-          <div className="max-w-7xl mx-auto px-6">
+        <section id="contact" ref={contactRef} className="py-20 md:py-32 bg-neutral-900 relative overflow-hidden">
+          <motion.div 
+            style={{ y: yContact }}
+            className="absolute top-0 right-0 text-[20vw] font-serif opacity-[0.01] select-none pointer-events-none"
+          >
+            CONTACT
+          </motion.div>
+          <div className="max-w-7xl mx-auto px-6 relative z-10">
             <div className="grid lg:grid-cols-2 gap-16 lg:gap-24">
               <div>
                 <h2 className="text-xs uppercase tracking-[0.5em] text-luxury-accent mb-6 md:mb-8">Get in Touch</h2>
