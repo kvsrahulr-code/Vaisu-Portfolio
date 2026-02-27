@@ -186,16 +186,17 @@ const ProjectCard = ({ project, onClick }: ProjectCardProps) => {
     <motion.div 
       ref={ref}
       style={{ y }}
-      layoutId={`card-${project.id}`}
+      layoutId={`card-container-${project.id}`}
       onClick={onClick}
       className="group relative aspect-[4/5] overflow-hidden cursor-pointer bg-neutral-900"
       whileHover={{ scale: 0.98 }}
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
     >
       <motion.img 
+        layoutId={`card-image-${project.id}`}
         src={project.heroImage} 
         alt={project.title}
-        className="w-full h-full object-cover opacity-70 group-hover:opacity-40 transition-all duration-700 group-hover:scale-110"
+        className="w-full h-full object-cover opacity-90 group-hover:opacity-60 transition-all duration-700 group-hover:scale-110"
         referrerPolicy="no-referrer"
       />
       <div className="absolute inset-0 p-8 flex flex-col justify-end bg-gradient-to-t from-luxury-bg/80 to-transparent">
@@ -234,7 +235,7 @@ const CaseStudy = ({ project, onClose }: CaseStudyProps) => {
       {/* Hero */}
       <section className="relative h-[80vh] w-full overflow-hidden">
         <motion.img 
-          layoutId={`card-${project.id}`}
+          layoutId={`card-image-${project.id}`}
           src={project.heroImage} 
           className="w-full h-full object-cover"
           referrerPolicy="no-referrer"
